@@ -461,5 +461,87 @@ namespace WorldOfKamish.Terrain {
             if (value <= 0)
                 throw new ArgumentOutOfRangeException(name);
         }
+
+        public void SaveWorld(string worldFolder) {
+            if (!IsReady) {
+                throw new InvalidOperationException(
+                    "Generate or load terrain before saving.");
+            }
+
+            var densityGrids = new Dictionary<Vector3Int, TerrainDensityGrid>();
+
+            foreach (var entry in chunks) {
+                TerrainChunk chunk = entry.Value;
+
+                if (chunk == null || chunk.Density == null) {
+                    throw new InvalidOperationException(
+                        $"Chunk {entry.Key} has no density data.");
+                }
+
+                densityGrids.Add(entry.Key, chunk.Density);
+            }
+
+            // These bounds are exact multiples of CellsPerAxis.
+            var first = new Vector3Int( minSample.x / CellsPerAxis,
+                                        minSample.y / CellsPerAxis,
+                                        minSample.z / CellsPerAxis);
+
+            var counts = new Vector3Int(    (maxSample.x - minSample.x) / CellsPerAxis,
+                                            (maxSample.y - minSample.y) / CellsPerAxis,
+                                            (maxSample.z - minSample.z) / CellsPerAxis);
+
+            TerrainSave.Save(
+                worldFolder,
+                first,
+                counts,
+                CellsPerAxis,
+                SampleSpacing,
+                densityGrids);
+        }
+
+        public void LoadWorld(string worldFolder, Material material) {
+            if (!Application.isPlaying) {
+                throw new InvalidOperationException(
+                    "Load terrain in Play mode.");
+            }
+
+            if (material == null)
+                throw new ArgumentNullException(nameof(material));
+
+            // Read all files before Initialize clears the current terrain.
+            TerrainSave.LoadedWorld saved = TerrainSave.Load(worldFolder);
+
+            TerrainSave.WorldInfo info = saved.Info;
+
+            Initialize(
+                info.firstChunk,
+                info.chunkCounts,
+                info.cellsPerAxis,
+                info.sampleSpacing,
+                material,
+                (targetGrid, originSample) => {
+                    var coordinate = new Vector3Int(    originSample.x / info.cellsPerAxis,
+                                                        originSample.y / info.cellsPerAxis,
+                                                        originSample.z / info.cellsPerAxis);
+
+                    TerrainDensityGrid sourceGrid = saved.Chunks[coordinate];
+
+                    // This callback restores saved samples instead of generating them.
+                    for (int z = 0; z < targetGrid.SamplesPerAxis; z++) {
+                        for (int y = 0; y < targetGrid.SamplesPerAxis; y++) {
+                            for (int x = 0; x < targetGrid.SamplesPerAxis; x++) {
+                                targetGrid.Set(
+                                    x,
+                                    y,
+                                    z,
+                                    sourceGrid.Get(x, y, z));
+                            }
+                        }
+                    }
+                }
+            );
+
+            CheckSharedBoundaries();
+        }
     }
 }
