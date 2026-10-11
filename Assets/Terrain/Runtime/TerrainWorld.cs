@@ -35,13 +35,12 @@ namespace WorldOfKamish.Terrain {
 
         // Main thread only.
         // This first version loads a bounded rectangular region.
-        public void Initialize(
-            Vector3Int first,
-            Vector3Int counts,
-            int cells,
-            float spacing,
-            Material material,
-            Action<ChunkDensityData, Vector3Int> fill) {
+        public void Initialize( Vector3Int first,
+                                Vector3Int counts,
+                                int cells,
+                                float spacing,
+                                Material material,
+                                Action<ChunkDensityData, Vector3Int> fill) {
             if (!Application.isPlaying) {
                 throw new InvalidOperationException(
                     "Initialize terrain in Play mode.");
@@ -66,6 +65,13 @@ namespace WorldOfKamish.Terrain {
 
             if (fill == null)
                 throw new ArgumentNullException(nameof(fill));
+
+            ChunkCreator creator = GetComponent<ChunkCreator>();
+
+            if (creator == null) {
+                throw new InvalidOperationException(
+                    "TerrainWorld requires a ChunkCreator component.");
+            }
 
             Vector3Int low = Vector3Int.zero;
             Vector3Int high = Vector3Int.zero;
@@ -96,35 +102,23 @@ namespace WorldOfKamish.Terrain {
                     for (int y = 0; y < counts.y; y++) {
                         for (int x = 0; x < counts.x; x++) {
                             Vector3Int coordinate =
-                                first + new Vector3Int(x, y, z);
+                        first + new Vector3Int(x, y, z);
 
-                            Vector3Int origin = coordinate * cells;
+                            Vector3Int origin =
+                        coordinate * cells;
 
-                            var grid = new ChunkDensityData(cells);
+                            var density =
+                        new ChunkDensityData(cells);
 
-                            fill(grid, origin);
+                            fill(density, origin);
 
-                            var chunkObject = new GameObject(
-                                $"Chunk ({coordinate.x}, " +
-                                $"{coordinate.y}, {coordinate.z})");
+                            Chunk chunk = creator.CreateChunk(
+                        coordinate,
+                        density,
+                        spacing,
+                        material);
 
-                            chunkObject.transform.SetParent(
-                                transform,
-                                false);
-
-                            Chunk chunk =
-                                chunkObject.AddComponent<Chunk>();
-
-                            // Register before initialization so cleanup
-                            // owns the object if initialization fails.
                             chunks.Add(coordinate, chunk);
-
-                            chunk.Initialize(
-                                coordinate,
-                                grid,
-                                spacing,
-                                material,
-                                mesher);
                         }
                     }
                 }
