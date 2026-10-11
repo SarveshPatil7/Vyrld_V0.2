@@ -1,6 +1,11 @@
-using UnityEngine;
+public static class ChunkOptimizer {
+    public static ChunkDensityData Optimize(
+        ChunkDensityData data) {
+        return data;
+    }
 
-public class ChunkOptimizer
-{
-    
+    public static ChunkDensityData Restore(
+        ChunkDensityData data) {
+        return data;
+    }
 }

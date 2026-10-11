@@ -1,6 +1,13 @@
+using System;
 using UnityEngine;
 
-public class ChunkStoreManifest
-{
-    
+[Serializable]
+public sealed class ChunkStoreManifest {
+    public int formatVersion;
+
+    public int cellsPerAxis;
+    public float cellSize;
+
+    public Vector3Int firstChunk;
+    public Vector3Int chunkCounts;
 }

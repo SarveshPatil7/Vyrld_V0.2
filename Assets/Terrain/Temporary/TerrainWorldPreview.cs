@@ -2,163 +2,90 @@ using System;
 using System.IO;
 using UnityEngine;
 
-namespace WorldOfKamish.Terrain {
-    [DisallowMultipleComponent]
-    [RequireComponent(typeof(TerrainWorld))]
-    [RequireComponent(typeof(ChunkSettings))]
-    [RequireComponent(typeof(ChunkGenerator))]
-    public class TerrainWorldPreview : MonoBehaviour {
-        public enum StartupMode {
-            Generate,
-            LoadSaved,
-            Nothing
-        }
+[DisallowMultipleComponent]
+[RequireComponent(typeof(ChunkManager))]
+public sealed class TerrainWorldPreview : MonoBehaviour {
+    [SerializeField]
+    private Material terrainMaterial;
 
-        [Header("Startup")]
+    [SerializeField]
+    private string saveName = "TerrainTest";
 
-        [SerializeField]
-        private StartupMode startupMode = StartupMode.Generate;
+    [SerializeField]
+    private Vector3Int chunkCounts =
+        new Vector3Int(2, 2, 2);
 
-        [Header("Save")]
-
-        [SerializeField]
-        private string saveName = "TerrainTest";
-
-        [Header("Rendering")]
-
-        [SerializeField]
-        private Material terrainMaterial;
-
-        [Header("Chunk Grid")]
-
-        [SerializeField]
-        private Vector3Int firstChunk = new Vector3Int(-1, -1, -1);
-
-        [SerializeField]
-        private Vector3Int chunkCounts = new Vector3Int(2, 2, 2);
-
-        private string SaveFolder {
-            get {
-                if (string.IsNullOrWhiteSpace(saveName) ||
-                    saveName == "." ||
-                    saveName == ".." ||
-                    saveName.Contains("/") ||
-                    saveName.Contains("\\") ||
-                    saveName.IndexOfAny(
-                        Path.GetInvalidFileNameChars()) >= 0) {
-                    throw new InvalidOperationException(
-                        "Save Name must be a valid single folder name.");
-                }
-
-                return Path.Combine(
-                    Application.persistentDataPath,
-                    "Worlds",
-                    saveName);
+    private string SaveFolder {
+        get {
+            if (string.IsNullOrWhiteSpace(saveName)) {
+                throw new InvalidOperationException(
+                    "Save Name cannot be empty.");
             }
+
+            return Path.Combine(
+                Application.persistentDataPath,
+                "Worlds",
+                saveName);
         }
+    }
 
-        private void Start() {
-            switch (startupMode) {
-                case StartupMode.Generate:
-                    ResetTerrain();
-                    break;
+    [ContextMenu("Generate Chunks")]
+    public void Generate() {
+        RequirePlayMode();
+        RequireMaterial();
 
-                case StartupMode.LoadSaved:
-                    LoadTerrain();
-                    break;
+        ChunkManager manager =
+            GetComponent<ChunkManager>();
 
-                case StartupMode.Nothing:
-                    break;
-            }
+        manager.GenerateChunks(
+            chunkCounts,
+            terrainMaterial);
+
+        manager.ValidateBoundaries();
+    }
+
+    [ContextMenu("Save Chunks")]
+    public void Save() {
+        RequirePlayMode();
+
+        GetComponent<ChunkManager>()
+            .Save(SaveFolder);
+    }
+
+    [ContextMenu("Load Chunks")]
+    public void Load() {
+        RequirePlayMode();
+        RequireMaterial();
+
+        ChunkManager manager =
+            GetComponent<ChunkManager>();
+
+        manager.Load(
+            SaveFolder,
+            terrainMaterial);
+
+        manager.ValidateBoundaries();
+    }
+
+    [ContextMenu("Clear Loaded Chunks")]
+    public void Clear() {
+        RequirePlayMode();
+
+        GetComponent<ChunkManager>()
+            .ClearLoadedChunks();
+    }
+
+    private static void RequirePlayMode() {
+        if (!Application.isPlaying) {
+            throw new InvalidOperationException(
+                "Enter Play mode first.");
         }
+    }
 
-        [ContextMenu("Generate Terrain (Discards Unsaved Edits)")]
-        public void ResetTerrain() {
-            if (!RequirePlayMode() || !RequireMaterial())
-                return;
-
-            TerrainWorld world = GetComponent<TerrainWorld>();
-            ChunkSettings settings = GetComponent<ChunkSettings>();
-            ChunkGenerator generator = GetComponent<ChunkGenerator>();
-
-            world.Initialize(
-                firstChunk,
-                chunkCounts,
-                settings.CellsPerAxis,
-                settings.CellSize,
-                terrainMaterial,
-                generator.Fill);
-
-            world.CheckSharedBoundaries();
-
-            Debug.Log("Generated terrain.", this);
-        }
-
-        [ContextMenu("Save Terrain")]
-        public void SaveTerrain() {
-            if (!RequirePlayMode())
-                return;
-
-            string folder = SaveFolder;
-
-            GetComponent<TerrainWorld>().SaveWorld(folder);
-
-            Debug.Log(
-                $"Saved terrain to:\n{folder}",
-                this);
-        }
-
-        [ContextMenu("Load Saved Terrain")]
-        public void LoadTerrain() {
-            if (!RequirePlayMode() || !RequireMaterial())
-                return;
-
-            string folder = SaveFolder;
-
-            GetComponent<TerrainWorld>().LoadWorld(
-                folder,
-                terrainMaterial);
-
-            Debug.Log(
-                $"Loaded terrain from:\n{folder}",
-                this);
-        }
-
-        [ContextMenu("Clear Loaded Terrain")]
-        public void ClearTerrain() {
-            if (!RequirePlayMode())
-                return;
-
-            GetComponent<TerrainWorld>().Clear();
-
-            Debug.Log("Cleared loaded terrain.", this);
-        }
-
-        [ContextMenu("Print Save Folder")]
-        public void PrintSaveFolder() {
-            Debug.Log(SaveFolder, this);
-        }
-
-        private bool RequirePlayMode() {
-            if (Application.isPlaying)
-                return true;
-
-            Debug.LogWarning(
-                "Enter Play mode first.",
-                this);
-
-            return false;
-        }
-
-        private bool RequireMaterial() {
-            if (terrainMaterial != null)
-                return true;
-
-            Debug.LogError(
-                "Assign Terrain Material first.",
-                this);
-
-            return false;
+    private void RequireMaterial() {
+        if (terrainMaterial == null) {
+            throw new InvalidOperationException(
+                "Assign the temporary terrain material.");
         }
     }
 }
