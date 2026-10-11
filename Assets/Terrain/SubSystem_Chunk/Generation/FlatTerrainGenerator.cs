@@ -9,7 +9,7 @@ namespace WorldOfKamish.Terrain
         /// For chunk coordinate cy, pass cy * grid.CellsPerAxis.
         /// Equal global samples produce equal densities at shared chunk boundaries.
         /// </summary>
-        public static void Fill(TerrainDensityGrid grid, int originSampleY,
+        public static void Fill(ChunkDensityData grid, int originSampleY,
             double sampleSpacing, double surfaceHeight, double densityUnitsPerCell)
         {
             if (grid == null) throw new ArgumentNullException(nameof(grid));
@@ -22,8 +22,8 @@ namespace WorldOfKamish.Terrain
             {
                 double globalY = ((long)originSampleY + y) * sampleSpacing;
                 double value = (surfaceHeight - globalY) / sampleSpacing * densityUnitsPerCell;
-                value = Math.Max(-TerrainDensityGrid.DensityLimit,
-                    Math.Min(TerrainDensityGrid.DensityLimit, value));
+                value = Math.Max(-ChunkDensityData.DensityLimit,
+                    Math.Min(ChunkDensityData.DensityLimit, value));
                 int density = (int)Math.Round(value, MidpointRounding.AwayFromZero);
                 for (int z = 0; z < grid.SamplesPerAxis; z++)
                     for (int x = 0; x < grid.SamplesPerAxis; x++)

@@ -5,7 +5,9 @@ using UnityEngine;
 namespace WorldOfKamish.Terrain {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(TerrainWorld))]
-    public sealed class TerrainWorldPreview : MonoBehaviour {
+    [RequireComponent(typeof(ChunkSettings))]
+    [RequireComponent(typeof(ChunkGenerator))]
+    public class TerrainWorldPreview : MonoBehaviour {
         public enum StartupMode {
             Generate,
             LoadSaved,
@@ -34,23 +36,6 @@ namespace WorldOfKamish.Terrain {
 
         [SerializeField]
         private Vector3Int chunkCounts = new Vector3Int(2, 2, 2);
-
-        [SerializeField, Range(1, 32)]
-        private int cellsPerAxis = 16;
-
-        [SerializeField, Min(0.01f)]
-        private float sampleSpacing = 1f;
-
-        [SerializeField, Range(1f, 127f)]
-        private float densityUnitsPerCell = 32f;
-
-        [Header("Initial Sphere")]
-
-        [SerializeField]
-        private Vector3 sphereCenter = Vector3.zero;
-
-        [SerializeField, Min(0.01f)]
-        private float sphereRadius = 5.25f;
 
         private string SaveFolder {
             get {
@@ -93,14 +78,16 @@ namespace WorldOfKamish.Terrain {
                 return;
 
             TerrainWorld world = GetComponent<TerrainWorld>();
+            ChunkSettings settings = GetComponent<ChunkSettings>();
+            ChunkGenerator generator = GetComponent<ChunkGenerator>();
 
             world.Initialize(
                 firstChunk,
                 chunkCounts,
-                cellsPerAxis,
-                sampleSpacing,
+                settings.CellsPerAxis,
+                settings.CellSize,
                 terrainMaterial,
-                Fill);
+                generator.Fill);
 
             world.CheckSharedBoundaries();
 
@@ -150,22 +137,6 @@ namespace WorldOfKamish.Terrain {
         [ContextMenu("Print Save Folder")]
         public void PrintSaveFolder() {
             Debug.Log(SaveFolder, this);
-        }
-
-        private void Fill(
-            TerrainDensityGrid grid,
-            Vector3Int origin) {
-            SphereTerrainGenerator.Fill(
-                grid,
-                sampleSpacing: sampleSpacing,
-                centerX: sphereCenter.x,
-                centerY: sphereCenter.y,
-                centerZ: sphereCenter.z,
-                radius: sphereRadius,
-                densityUnitsPerCell: densityUnitsPerCell,
-                originSampleX: origin.x,
-                originSampleY: origin.y,
-                originSampleZ: origin.z);
         }
 
         private bool RequirePlayMode() {

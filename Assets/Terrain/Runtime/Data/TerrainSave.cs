@@ -29,13 +29,13 @@ namespace WorldOfKamish.Terrain {
         public sealed class LoadedWorld {
             public WorldInfo Info { get; }
 
-            public Dictionary<Vector3Int, TerrainDensityGrid> Chunks {
+            public Dictionary<Vector3Int, ChunkDensityData> Chunks {
                 get;
             }
 
             public LoadedWorld(
                 WorldInfo info,
-                Dictionary<Vector3Int, TerrainDensityGrid> chunks) {
+                Dictionary<Vector3Int, ChunkDensityData> chunks) {
                 Info = info;
                 Chunks = chunks;
             }
@@ -47,7 +47,7 @@ namespace WorldOfKamish.Terrain {
             Vector3Int chunkCounts,
             int cellsPerAxis,
             float sampleSpacing,
-            Dictionary<Vector3Int, TerrainDensityGrid> chunks) {
+            Dictionary<Vector3Int, ChunkDensityData> chunks) {
             if (chunks == null)
                 throw new ArgumentNullException(nameof(chunks));
 
@@ -100,7 +100,7 @@ namespace WorldOfKamish.Terrain {
                 foreach (Vector3Int coordinate in Coordinates(info)) {
                     if (!chunks.TryGetValue(
                         coordinate,
-                        out TerrainDensityGrid grid)) {
+                        out ChunkDensityData grid)) {
                         throw new InvalidDataException(
                             $"Missing loaded chunk {coordinate}.");
                     }
@@ -170,12 +170,12 @@ namespace WorldOfKamish.Terrain {
                 info.chunkSet);
 
             var chunks =
-                new Dictionary<Vector3Int, TerrainDensityGrid>();
+                new Dictionary<Vector3Int, ChunkDensityData>();
 
             // Read and validate every chunk before returning anything
             // to TerrainWorld.
             foreach (Vector3Int coordinate in Coordinates(info)) {
-                TerrainDensityGrid grid = ReadChunk(
+                ChunkDensityData grid = ReadChunk(
                     ChunkPath(chunkFolder, coordinate),
                     coordinate,
                     info.cellsPerAxis);
@@ -189,7 +189,7 @@ namespace WorldOfKamish.Terrain {
         private static void WriteChunk(
             string path,
             Vector3Int coordinate,
-            TerrainDensityGrid grid) {
+            ChunkDensityData grid) {
             using (var stream = new FileStream(
                 path,
                 FileMode.CreateNew,
@@ -207,7 +207,7 @@ namespace WorldOfKamish.Terrain {
                 writer.Write(RawDensityEncoding);
                 writer.Write(grid.SampleCount);
 
-                // X varies fastest, matching TerrainDensityGrid.
+                // X varies fastest, matching ChunkDensityData.
                 for (int z = 0; z < grid.SamplesPerAxis; z++) {
                     for (int y = 0; y < grid.SamplesPerAxis; y++) {
                         for (int x = 0; x < grid.SamplesPerAxis; x++) {
@@ -219,7 +219,7 @@ namespace WorldOfKamish.Terrain {
             }
         }
 
-        private static TerrainDensityGrid ReadChunk(
+        private static ChunkDensityData ReadChunk(
             string path,
             Vector3Int expectedCoordinate,
             int expectedCells) {
@@ -265,7 +265,7 @@ namespace WorldOfKamish.Terrain {
                         $"Chunk header does not match the world: {path}");
                 }
 
-                var grid = new TerrainDensityGrid(cells);
+                var grid = new ChunkDensityData(cells);
 
                 for (int z = 0; z < samplesPerAxis; z++) {
                     for (int y = 0; y < samplesPerAxis; y++) {

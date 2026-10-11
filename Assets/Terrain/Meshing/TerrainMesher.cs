@@ -73,7 +73,7 @@ namespace WorldOfKamish.Terrain {
         /// Do not use the same instance concurrently.
         /// </summary>
         public void Build(
-            TerrainDensityGrid grid,
+            ChunkDensityData grid,
             float sampleSpacing,
             Mesh target) {
             if (grid == null)
@@ -143,7 +143,7 @@ namespace WorldOfKamish.Terrain {
         }
 
         private int ReadCell(
-            TerrainDensityGrid grid,
+            ChunkDensityData grid,
             int x,
             int y,
             int z,

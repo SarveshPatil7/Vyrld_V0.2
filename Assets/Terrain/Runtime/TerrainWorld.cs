@@ -7,18 +7,18 @@ namespace WorldOfKamish.Terrain {
     // Generation is supplied by the caller.
     [DisallowMultipleComponent]
     public sealed class TerrainWorld : MonoBehaviour {
-        private readonly Dictionary<Vector3Int, TerrainChunk> chunks =
-            new Dictionary<Vector3Int, TerrainChunk>();
+        private readonly Dictionary<Vector3Int, Chunk> chunks =
+            new Dictionary<Vector3Int, Chunk>();
 
-        private readonly HashSet<TerrainChunk> dirtyChunks =
-            new HashSet<TerrainChunk>();
+        private readonly HashSet<Chunk> dirtyChunks =
+            new HashSet<Chunk>();
 
         private readonly TerrainMesher mesher =
             new TerrainMesher();
 
         // A sample at a chunk corner can belong to eight chunks.
-        private readonly TerrainChunk[] owners =
-            new TerrainChunk[8];
+        private readonly Chunk[] owners =
+            new Chunk[8];
 
         private readonly Vector3Int[] ownerSamples =
             new Vector3Int[8];
@@ -41,7 +41,7 @@ namespace WorldOfKamish.Terrain {
             int cells,
             float spacing,
             Material material,
-            Action<TerrainDensityGrid, Vector3Int> fill) {
+            Action<ChunkDensityData, Vector3Int> fill) {
             if (!Application.isPlaying) {
                 throw new InvalidOperationException(
                     "Initialize terrain in Play mode.");
@@ -100,7 +100,7 @@ namespace WorldOfKamish.Terrain {
 
                             Vector3Int origin = coordinate * cells;
 
-                            var grid = new TerrainDensityGrid(cells);
+                            var grid = new ChunkDensityData(cells);
 
                             fill(grid, origin);
 
@@ -112,8 +112,8 @@ namespace WorldOfKamish.Terrain {
                                 transform,
                                 false);
 
-                            TerrainChunk chunk =
-                                chunkObject.AddComponent<TerrainChunk>();
+                            Chunk chunk =
+                                chunkObject.AddComponent<Chunk>();
 
                             // Register before initialization so cleanup
                             // owns the object if initialization fails.
@@ -182,7 +182,7 @@ namespace WorldOfKamish.Terrain {
 
                         if (!chunks.TryGetValue(
                             primary - offset,
-                            out TerrainChunk chunk)) {
+                            out Chunk chunk)) {
                             continue;
                         }
 
@@ -300,9 +300,9 @@ namespace WorldOfKamish.Terrain {
                             p.z);
 
                         int newValue = Math.Max(
-                            -TerrainDensityGrid.DensityLimit,
+                            -ChunkDensityData.DensityLimit,
                             Math.Min(
-                                TerrainDensityGrid.DensityLimit,
+                                ChunkDensityData.DensityLimit,
                                 oldValue + change));
 
                         bool changed = false;
@@ -312,7 +312,7 @@ namespace WorldOfKamish.Terrain {
                         for (int i = 0; i < count; i++) {
                             p = ownerSamples[i];
 
-                            TerrainChunk chunk = owners[i];
+                            Chunk chunk = owners[i];
 
                             if (chunk.Density.Get(
                                 p.x,
@@ -338,7 +338,7 @@ namespace WorldOfKamish.Terrain {
             }
 
             // HashSet ensures each changed chunk rebuilds once.
-            foreach (TerrainChunk chunk in dirtyChunks) {
+            foreach (Chunk chunk in dirtyChunks) {
                 chunk.RebuildMesh(mesher);
                 LastRebuiltChunks++;
             }
@@ -362,7 +362,7 @@ namespace WorldOfKamish.Terrain {
 
                     if (!chunks.TryGetValue(
                         entry.Key + step,
-                        out TerrainChunk other)) {
+                        out Chunk other)) {
                         continue;
                     }
 
@@ -420,7 +420,7 @@ namespace WorldOfKamish.Terrain {
         public void Clear() {
             IsReady = false;
 
-            foreach (TerrainChunk chunk in chunks.Values) {
+            foreach (Chunk chunk in chunks.Values) {
                 if (chunk == null)
                     continue;
 
@@ -468,10 +468,10 @@ namespace WorldOfKamish.Terrain {
                     "Generate or load terrain before saving.");
             }
 
-            var densityGrids = new Dictionary<Vector3Int, TerrainDensityGrid>();
+            var densityGrids = new Dictionary<Vector3Int, ChunkDensityData>();
 
             foreach (var entry in chunks) {
-                TerrainChunk chunk = entry.Value;
+                Chunk chunk = entry.Value;
 
                 if (chunk == null || chunk.Density == null) {
                     throw new InvalidOperationException(
@@ -524,7 +524,7 @@ namespace WorldOfKamish.Terrain {
                                                         originSample.y / info.cellsPerAxis,
                                                         originSample.z / info.cellsPerAxis);
 
-                    TerrainDensityGrid sourceGrid = saved.Chunks[coordinate];
+                    ChunkDensityData sourceGrid = saved.Chunks[coordinate];
 
                     // This callback restores saved samples instead of generating them.
                     for (int z = 0; z < targetGrid.SamplesPerAxis; z++) {

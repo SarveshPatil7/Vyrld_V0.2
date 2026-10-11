@@ -3,7 +3,7 @@ using System;
 namespace WorldOfKamish.Terrain {
     public static class SphereTerrainGenerator {
         public static void Fill(
-            TerrainDensityGrid grid,
+            ChunkDensityData grid,
             double sampleSpacing,
             double centerX,
             double centerY,
@@ -48,9 +48,9 @@ namespace WorldOfKamish.Terrain {
                             (radius - distance) * densityScale;
 
                         density = Math.Max(
-                            -TerrainDensityGrid.DensityLimit,
+                            -ChunkDensityData.DensityLimit,
                             Math.Min(
-                                TerrainDensityGrid.DensityLimit,
+                                ChunkDensityData.DensityLimit,
                                 density));
 
                         int quantizedDensity = (int)Math.Round(
